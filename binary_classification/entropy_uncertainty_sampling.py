@@ -110,5 +110,9 @@ plt.title("Decision Boundary with Total Data")
 plt.legend()
 
 
-
+### Final accuracy on the set
+model = logistic_regression()
+# Load the last weights learned
+model.set_weights(weights_us[-1])
+model.evaluate(data_us[:,:2], data_us[:,2])
 
