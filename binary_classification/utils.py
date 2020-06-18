@@ -81,3 +81,35 @@ def sample_highest_entropy(n_sample, model, data):
     data_with_high_entropy = data[id_high_entropies]
     data = np.delete(data, id_high_entropies, axis=0)
     return data_with_high_entropy, data
+
+def  sample_lowest_margin(n_sample, model, data):
+    """
+    Disclaimer: this function works only in binary classification.
+    First the function computes the margin between two classes
+    Then it select n_sample items with the lowest margin.
+    Those items are typically those that the model struggle to classify
+    because the margin between the predictions is low.
+    """
+    pred = model.predict(data[:, :2]) # predict unlabeled data     
+    pred_others = 1-pred         # compute  the proabilities of the second class  
+    margin = np.abs(pred-pred_others) # compute the difference and take the max 
+    index = margin.argsort(axis=0)                 #  get the indexes to sort by margin
+    data_sorted = np.take_along_axis(data, index , axis=0)  # the new data sorting 
+    data_add_training = data_sorted[:n_sample]  # take the first 10 rows, with the lowest margin       
+    data_labelled = data_sorted[n_sample:]     # data without the last 10 rows         
+    return data_add_training, data_labelled
+
+
+def sample_least_confidence(n_sample, model, data):
+    """
+    This function can be used even for multiclass classification problem.
+    It selects the items where the prediction is the least confident
+    by sorting 1-prediction.
+    """    
+    pred = model.predict(data[:, :2])
+    least_confidence = 1-pred
+    ind = least_confidence.argsort(axis=0)
+    data_sorted = np.take_along_axis(data, ind , axis=0)  # the new data sorting     
+    data_add_training = data_sorted[-n_sample:]  # take the last 10 rows, with the least confidence        
+    data_labelled = data_sorted[:-n_sample]     # data without the last 10 rows 
+    return data_add_training, data_labelled
