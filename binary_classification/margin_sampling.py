@@ -8,8 +8,7 @@ Created on Sat May 30 15:56:51 2020
 
 import numpy as np 
 import matplotlib.pyplot as plt 
-import keras 
-from utils import *
+from utils import plot_decision_boundary, logistic_regression, sample_lowest_margin, active_learning
 
 
 #################### INITIAL DATA #################### 
@@ -36,57 +35,8 @@ plt.legend()
 # random sampling with data_rs, and uncertainty sampling with data_us
 data_ms = np.copy(x)
 
-
-
-
-def LogisticRegression():
-    
-    model = keras.models.Sequential()
-    model.add(keras.layers.Dense(1,input_shape=(2,), activation="sigmoid"))  
-    model.compile(optimizer='SGD', loss='binary_crossentropy', metrics=['accuracy'])
-    
-    return model 
-
-
-
-def active_learning(data, n_iter, n_sample, epochs):
-    """
-    The training dataset is increased by n_sample example at every iteration.
-    Args:
-        data: Pool of unseen data
-        n_iter: Int. Number of iteration to perform the active learning procedure
-        n_sample: Int. Number of sample per iteration
-    Returns:
-        evaluation: List of float. The evaluation of the model trained on data
-        training_data: Total data we have trained on
-        weights: parameters of the model at each iteration
-    """
-    evaluation = []
-    weights = []
-    for i in range(n_iter):
-        print("Iteration: {}".format(i+1))        
-        if i == 0:
-            sampled_data, data = sample_random(n_sample,data)
-            training_data = sampled_data        
-        # Starting the active learning loop
-        model = LogisticRegression()
-        print("Start training")
-        print("Training data shape: {}".format(training_data.shape))
-        model.fit(training_data[:,:2], training_data[:,2], epochs=epochs, verbose=0, shuffle=True)
-        print("End training")
-#        import pdb;pdb.set_trace()
-        eval_i = model.evaluate(data[:,:2], data[:,2])[1]
-        evaluation.append(eval_i)
-        print("Accuracy: {}".format(eval_i))        
-        weights.append(model.get_weights())
-#        import pdb; pdb.set_trace() 
-        sampled_data, data = sample_highest_margin(n_sample, model, data)
-#        import pdb; pdb.set_trace()        
-        training_data = np.concatenate([training_data, sampled_data])        
-        print("---------------------------")
-    return evaluation, weights, training_data
-
-evaluation_ms, weights_ms, training_ms  = active_learning(data_ms, n_iter=10, n_sample=10, epochs=500)
+####################  ACTIVE LEARNING #################### 
+evaluation_ms, weights_ms, training_ms  = active_learning(data_ms, n_iter=10, n_sample=10, epochs=500, acquisition_function=sample_lowest_margin)
 plt.plot(evaluation_ms)
 
 line_ms_x, line_ms_y = plot_decision_boundary(weights_ms)
@@ -101,6 +51,8 @@ rs_id1 = training_ms[id1]
 plt.scatter(rs_id0[:,0], rs_id0[:,1], s=30., label='N1')
 plt.scatter(rs_id1[:,0], rs_id1[:,1], s=30., label='N2')
 plt.plot(line_ms_x, line_ms_y, label="Margin Sampling")
+plt.xlim(-5,5)
+plt.ylim(-4,4)
 plt.title("Decision Boundary with the data we trained on ")
 plt.legend()
 
@@ -108,17 +60,17 @@ plt.legend()
 plt.scatter(x1[:,0], x1[:,1], s=10., label='N1')
 plt.scatter(x2[:,0], x2[:,1], s=10., label='N2')
 plt.plot(line_ms_x, line_ms_y, label="Margin Sampling")
+plt.xlim(-5,5)
+plt.ylim(-4,4)
 plt.title("Decision Boundary with Total Data")
 plt.legend()
 
 ##### Final test
-model = LogisticRegression()
+model = logistic_regression()
 model.set_weights(weights_ms[-1])
 acc_ms = model.evaluate(data_ms[:,:2], data_ms[:,2])[1]
 
 
-
-sampled, new = sample_highest_margin(10, model, training_ms)
 
 
 
